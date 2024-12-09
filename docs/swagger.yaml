@@ -1,0 +1,437 @@
+basePath: /
+definitions:
+  controller.LoginRequest:
+    properties:
+      email:
+        example: john.doe@example.com
+        type: string
+      password:
+        example: password1234
+        type: string
+    required:
+    - email
+    - password
+    type: object
+  managementvoucherhandler.RedeemRequest:
+    properties:
+      points:
+        type: integer
+      user_id:
+        type: integer
+      voucher_id:
+        type: integer
+    required:
+    - points
+    - user_id
+    - voucher_id
+    type: object
+  models.Redeem:
+    properties:
+      id:
+        type: integer
+      redeem_date:
+        type: string
+      user_id:
+        type: integer
+      voucher_id:
+        type: integer
+    type: object
+  models.User:
+    properties:
+      email:
+        type: string
+      name:
+        type: string
+      password:
+        minLength: 8
+        type: string
+    required:
+    - email
+    - name
+    - password
+    type: object
+  models.Voucher:
+    properties:
+      applicable_areas:
+        example:
+        - Jawa
+        items:
+          type: string
+        type: array
+      description:
+        example: 10% off for purchases above 200.000
+        type: string
+      discount_value:
+        example: 10
+        type: number
+      end_date:
+        example: "2024-12-07T00:00:00Z"
+        type: string
+      minimum_purchase:
+        example: 200000
+        type: number
+      payment_methods:
+        example:
+        - Credit Card
+        items:
+          type: string
+        type: array
+      points_required:
+        example: 220
+        type: integer
+      quota:
+        example: 50
+        type: integer
+      start_date:
+        example: "2024-12-01T00:00:00Z"
+        type: string
+      status:
+        example: true
+        type: boolean
+      voucher_category:
+        example: Free Shipping
+        type: string
+      voucher_code:
+        example: DESCERIA100
+        type: string
+      voucher_name:
+        example: PROMO GAJIAN
+        type: string
+      voucher_type:
+        example: redeem points
+        type: string
+    required:
+    - applicable_areas
+    - discount_value
+    - end_date
+    - minimum_purchase
+    - payment_methods
+    - quota
+    - start_date
+    - voucher_category
+    - voucher_code
+    - voucher_name
+    - voucher_type
+    type: object
+  utils.ErrorResponse:
+    properties:
+      error_msg:
+        type: string
+      message:
+        type: string
+    type: object
+  utils.LoginResponse:
+    properties:
+      id:
+        type: string
+      token:
+        type: string
+    type: object
+  utils.ResponseOK:
+    properties:
+      data: {}
+      message:
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact:
+    email: support@example.com
+    name: API Support
+    url: http://example.com/support
+  description: API for managing vouchers
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+  termsOfService: http://example.com/terms/
+  title: Voucher System API
+  version: "1.0"
+paths:
+  /login:
+    post:
+      consumes:
+      - application/json
+      description: Authenticate user with email and password
+      parameters:
+      - description: Login request payload
+        in: body
+        name: loginRequest
+        required: true
+        schema:
+          $ref: '#/definitions/controller.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successful login
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.ResponseOK'
+            - properties:
+                data:
+                  $ref: '#/definitions/utils.LoginResponse'
+              type: object
+        "400":
+          description: Invalid input
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "401":
+          description: Invalid email or password
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "500":
+          description: Failed to save token
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+      summary: Login user
+      tags:
+      - Authentication
+  /register:
+    post:
+      consumes:
+      - application/json
+      description: Register a new user with email and password
+      parameters:
+      - description: User registration request payload
+        in: body
+        name: registerRequest
+        required: true
+        schema:
+          $ref: '#/definitions/models.User'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: User registered successfully
+          schema:
+            $ref: '#/definitions/utils.ResponseOK'
+        "400":
+          description: Invalid input
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "500":
+          description: Failed to register user
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+      summary: Register a new user
+      tags:
+      - Authentication
+  /vouchers:
+    get:
+      description: Retrieve vouchers based on status, area, and voucher type
+      parameters:
+      - description: Voucher status
+        in: query
+        name: status
+        type: string
+      - description: Voucher area
+        in: query
+        name: area
+        type: string
+      - description: Voucher type
+        in: query
+        name: voucher_type
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Vouchers retrieved successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.ResponseOK'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/models.Voucher'
+                  type: array
+              type: object
+        "404":
+          description: Vouchers not found
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+      security:
+      - Authentication: []
+      - UserID: []
+      summary: Get vouchers by query parameters
+      tags:
+      - Vouchers
+  /vouchers/{id}:
+    delete:
+      description: Soft delete a voucher by ID
+      parameters:
+      - description: Voucher ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: Deleted successfully
+          schema:
+            $ref: '#/definitions/utils.ResponseOK'
+        "500":
+          description: Failed to delete voucher
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+      security:
+      - Authentication: []
+      - UserID: []
+      summary: Soft delete a voucher
+      tags:
+      - Vouchers
+    put:
+      consumes:
+      - application/json
+      description: Update a voucher by ID
+      parameters:
+      - description: Voucher ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Updated voucher details
+        in: body
+        name: voucher
+        required: true
+        schema:
+          $ref: '#/definitions/models.Voucher'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Updated successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.ResponseOK'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.Voucher'
+              type: object
+        "400":
+          description: Invalid payload
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "500":
+          description: Failed to update voucher
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+      security:
+      - Authentication: []
+      - UserID: []
+      summary: Update a voucher
+      tags:
+      - Vouchers
+  /vouchers/create:
+    post:
+      consumes:
+      - application/json
+      description: Create a new voucher with provided details
+      parameters:
+      - description: Voucher details
+        in: body
+        name: voucher
+        required: true
+        schema:
+          $ref: '#/definitions/models.Voucher'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Created successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.ResponseOK'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.Voucher'
+              type: object
+        "400":
+          description: Invalid payload
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "500":
+          description: Failed to create voucher
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+      security:
+      - Authentication: []
+      - UserID: []
+      summary: Create a new voucher
+      tags:
+      - Vouchers
+  /vouchers/redeem:
+    post:
+      consumes:
+      - application/json
+      description: Redeem a voucher using points
+      parameters:
+      - description: Redeem request payload
+        in: body
+        name: redeemRequest
+        required: true
+        schema:
+          $ref: '#/definitions/managementvoucherhandler.RedeemRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Redeem created successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.ResponseOK'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.Redeem'
+              type: object
+        "400":
+          description: Invalid payload
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "500":
+          description: Failed to create redeem voucher
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+      security:
+      - Authentication: []
+      - UserID: []
+      summary: Create a redeem voucher
+      tags:
+      - Vouchers
+  /vouchers/redeem-points:
+    get:
+      description: Retrieve the list of redeem points
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Redeem points retrieved successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.ResponseOK'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/models.Redeem'
+                  type: array
+              type: object
+        "404":
+          description: Redeem points not found
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+      security:
+      - Authentication: []
+      - UserID: []
+      summary: Show redeem points
+      tags:
+      - Vouchers
+securityDefinitions:
+  Authentication:
+    in: header
+    name: Authorization
+    type: apiKey
+  UserID:
+    in: header
+    name: User-ID
+    type: apiKey
+swagger: "2.0"
